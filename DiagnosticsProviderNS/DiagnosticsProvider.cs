@@ -18,7 +18,7 @@ namespace DiagnosticsProviderNS
         public void CommitData<TDataType>(IDiagnosticData<TDataType> data);
     }
 
-    public abstract class TimeSpanDiagnosticData : IDiagnosticData<TimeSpan>
+    public abstract record TimeSpanDiagnosticData : IDiagnosticData<TimeSpan>
     {
         public TimeSpan Data { get; }
 
@@ -72,7 +72,7 @@ namespace DiagnosticsProviderNS
             }
             else if (EmitNotEnabledErrors)
             {
-                Log.Error($"Diagnostic group '{typeof(TDiagnosticGroup).FullName}' has not been enabled. Please enable before commiting data.");
+                Log.Error($"Diagnostic group '{typeof(TDiagnosticGroup).FullName}' has not been enabled. Enable before commiting data.");
             }
         }
     }
