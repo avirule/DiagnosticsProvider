@@ -1,21 +1,17 @@
-#region
-
 using System;
 using System.Collections.Generic;
 using Serilog;
 
-#endregion
-
 namespace DiagnosticsProviderNS
 {
-    public interface IDiagnosticData<out TDataType>
-    {
-        public TDataType Data { get; }
-    }
-
     public interface IDiagnosticGroup
     {
         public void CommitData<TDataType>(IDiagnosticData<TDataType> data);
+    }
+
+    public interface IDiagnosticData<out TDataType>
+    {
+        public TDataType Data { get; }
     }
 
     public abstract record TimeSpanDiagnosticData : IDiagnosticData<TimeSpan>
@@ -37,6 +33,8 @@ namespace DiagnosticsProviderNS
         /// </summary>
         public static bool EmitNotEnabledErrors { get; set; }
 
+        public static bool Enabled { get; set; }
+
         static DiagnosticsProvider() => _EnabledGroups = new Dictionary<Type, IDiagnosticGroup>();
 
         /// <summary>
@@ -45,10 +43,7 @@ namespace DiagnosticsProviderNS
         /// <typeparam name="TDiagnosticGroup"><see cref="IDiagnosticGroup" /> to enable for data logging.</typeparam>
         public static void EnableGroup<TDiagnosticGroup>() where TDiagnosticGroup : class, IDiagnosticGroup, new()
         {
-            if (_EnabledGroups.ContainsKey(typeof(TDiagnosticGroup)))
-            {
-                Log.Error($"Diagnostic group '{typeof(TDiagnosticGroup).FullName}' is already enabled.");
-            }
+            if (_EnabledGroups.ContainsKey(typeof(TDiagnosticGroup))) Log.Error($"Diagnostic group '{typeof(TDiagnosticGroup).FullName}' is already enabled.");
             else
             {
                 TDiagnosticGroup diagnosticGroup = new TDiagnosticGroup();
@@ -66,14 +61,11 @@ namespace DiagnosticsProviderNS
         public static void CommitData<TDiagnosticGroup, TDataType>(IDiagnosticData<TDataType> diagnosticData)
             where TDiagnosticGroup : IDiagnosticGroup
         {
-            if (_EnabledGroups.TryGetValue(typeof(TDiagnosticGroup), out IDiagnosticGroup? diagnosticGroup))
-            {
-                diagnosticGroup.CommitData(diagnosticData);
-            }
+            if (!Enabled) return;
+
+            if (_EnabledGroups.TryGetValue(typeof(TDiagnosticGroup), out IDiagnosticGroup? diagnosticGroup)) diagnosticGroup.CommitData(diagnosticData);
             else if (EmitNotEnabledErrors)
-            {
                 Log.Error($"Diagnostic group '{typeof(TDiagnosticGroup).FullName}' has not been enabled. Enable before commiting data.");
-            }
         }
     }
 }
